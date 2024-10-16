@@ -92,7 +92,7 @@ jobs:
         Write-Output "Product Version Suffix: $versionSuffix"
         
         $productConfig = "${{ inputs.custom_configuration }}"
-        if ($productConfig -eq "Default") {
+        if (($productConfig -eq "Default") -or ($productConfig -eq "")) {
           if ($deployPackages){
             $productConfig = "Release"
           }
