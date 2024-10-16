@@ -168,10 +168,12 @@ jobs:
 
     - name: Check for modified files
       id: git-check
-      run: echo modified=$(if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "true"; else echo "false"; fi) >> $env:GITHUB_OUTPUT
+      run: |
+        echo modified=$(if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "true"; else echo "false"; fi)
+        echo modified=$(if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "true"; else echo "false"; fi) >> $env:GITHUB_OUTPUT
 
     - name: Update changes in GitHub repository
-      if: steps.git-check.outputs.modified == 'true'
+      # if: steps.git-check.outputs.modified == 'true'
       run: |
         git config --global user.name 'Your Name' 
         git config --global user.email 'Your Email for GitHub'
