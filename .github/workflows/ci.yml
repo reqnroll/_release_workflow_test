@@ -48,6 +48,7 @@ jobs:
       product_version_prefix: ${{ steps.versions.outputs.product_version_prefix }}
       product_version_suffix: ${{ steps.versions.outputs.product_version_suffix }}
       product_main_version: ${{ steps.versions.outputs.product_main_version }}
+      product_patch_version: ${{ steps.versions.outputs.product_patch_version }}
       product_full_version: ${{ steps.versions.outputs.product_full_version }}
       product_configuration: ${{ steps.versions.outputs.product_configuration }}
       production_release: ${{ steps.versions.outputs.production_release }}
@@ -97,6 +98,10 @@ jobs:
         $mainVersion = &{$versionPrefix -match '^\d+\.\d+' > $null; $matches[0]}
         Write-Output "product_main_version=$mainVersion" >> $env:GITHUB_OUTPUT
         Write-Output "Product Main Version: $mainVersion"
+
+        $patchVersion = &{$versionPrefix -match '\d+$' > $null; $matches[0]}
+        Write-Output "product_patch_version=$patchVersion" >> $env:GITHUB_OUTPUT
+        Write-Output "Product Patch Version: $patchVersion"
 
         $fullVersion = $versionPrefix
         if ($versionSuffix -ne "") {
@@ -149,9 +154,19 @@ jobs:
       shell: pwsh
       run: |
         Write-Output "Deploying (prod: ${{ needs.build.outputs.production_release }}) ${{ needs.build.outputs.product_full_version }} (${{ needs.build.outputs.product_main_version }}) / key: $env:ENV_SECRET1"
+
+    - name: Simulate Bump Version
+      shell: pwsh
+      run: |
+        $patchVersion = "${{ needs.build.outputs.product_patch_version }}"
+        $newPatch = [int]$patchVersion + 1
+        $newVersion = "${{ needs.build.outputs.product_main_version }}.$newPatch"
+        Write-Output "New version: $newVersion"
+        Write-Output "$newVersion" >> versions.txt
+
     - name: Check for modified files
       id: git-check
-      run: echo ::set-output name=modified::$(if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "true"; else echo "false"; fi)
+      run: echo modified=$(if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "true"; else echo "false"; fi) >> $env:GITHUB_OUTPUT
 
     - name: Update changes in GitHub repository
       if: steps.git-check.outputs.modified == 'true'
