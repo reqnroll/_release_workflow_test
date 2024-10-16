@@ -147,7 +147,7 @@ jobs:
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
         ref: ${{ github.head_ref }}
-        ssh-key: ${{secrets.RELEASE_CODE_UPDATE_KEY}}
+        ssh-key: ${{secrets.RELEASE_GIT_SSH_KEY}}
     - uses: actions/download-artifact@v4
       with:
         name: packages
