@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: 
+      - 'main'
+    paths-ignore:
+      - 'docs/**'
+      - README.md
+      - CHANGELOG.md
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: 'Build Configuration'
+        required: true
+        default: 'Debug'
+        type: choice
+        options:
+        - Debug
+        - Release
+      production_release:
+        description: 'If the build produces a production package'
+        type: boolean
+        default: false
+        required: true
+      version_suffix:
+        description: 'Suffix for the NuGet packages (without leading -). Build ID will be appended. Use "-" to force empty.'
+        required: false
+      specs_filter:
+        description: 'Filter for Specs execution (e.g. Category=basicExecution)'
+        required: false
+
+permissions:
+  checks: write
+
+env:
+  SPECS_FILTER: "" # use for testing CI: "&Category=basicExecution"
+  REQNROLL_TEST_PIPELINEMODE: true
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    outputs:
+      product_version_prefix: ${{ steps.versions.outputs.product_version_prefix }}
+      product_version_suffix: ${{ steps.versions.outputs.product_version_suffix }}
+      product_main_version: ${{ steps.versions.outputs.product_main_version }}
+      product_configuration: ${{ steps.versions.outputs.product_configuration }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+    - id: versions
+      name: Calculate versions
+      shell: pwsh
+      run: |
+        $productionReleaseSetting = "${{ inputs.production_release }}"
+        $productionRelease = $false
+        if ($productionReleaseSetting -eq 'true') {
+            $productionRelease = $true
+        }
+        Write-Output "Production release: $productionRelease"
+
+        $versionSuffix = "${{ inputs.version_suffix }}"
+        if ($versionSuffix -eq "") {
+            $date = [datetime]::Today
+            $dateString = $date.ToString('yyyyMMdd')
+            $versionSuffix = "ci$dateString-${env:GITHUB_RUN_NUMBER}"
+        }
+        elseif ($versionSuffix -eq "-") {
+            $versionSuffix = ""
+        }
+        else {
+            $versionSuffix = "$versionSuffix-${env:GITHUB_RUN_NUMBER}"
+        }
+        Write-Output "product_version_suffix=$versionSuffix" >> $env:GITHUB_OUTPUT
+        Write-Output "Product Version Suffix: $versionSuffix"
+        
+        $productConfig = "${{ inputs.configuration }}"
+        if ($productConfig -eq "") {
+            $productConfig = "Debug"
+        }
+        Write-Output "product_configuration=$productConfig" >> $env:GITHUB_OUTPUT
+        Write-Output "Product Configuration: $productConfig"
+
+        $buildPropsXml = [xml](Get-Content Directory.Build.props)
+        $versionPrefix = $($buildPropsXml.Project.PropertyGroup.VersionPrefix)[1].Trim()
+        Write-Output "product_version_prefix=$versionPrefix" >> $env:GITHUB_OUTPUT
+        Write-Output "Product Version Prefix: $versionPrefix"
+
+        $mainVersion = &{$versionPrefix -match '^\d+\.\d+' > $null; $matches[0]}
+        Write-Output "product_main_version=$mainVersion" >> $env:GITHUB_OUTPUT
+        Write-Output "Product Main Version: $mainVersion"
+
+
+    - name: Simulate Build
+      shell: pwsh
+      run: |
+        Write-Output "hello ${{ steps.versions.outputs.product_version_prefix }}${{ steps.versions.outputs.product_version_suffix }} (${{ steps.versions.outputs.product_main_version }})" > package.${{ steps.versions.outputs.product_version_prefix }}.txt
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: packages
+        path: "*.txt"
+
+  test-job-1:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+    - name: Simulate Test
+      shell: pwsh
+      run: |
+        Write-Output "Testing ${{ needs.build.outputs.product_version_prefix }}${{ needs.build.outputs.product_version_suffix }} (${{ needs.build.outputs.product_main_version }})"

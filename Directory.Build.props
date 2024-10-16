@@ -1,0 +1,68 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    
+    <Reqnroll_Copyright>Copyright © Reqnroll</Reqnroll_Copyright>
+    <Reqnroll_Authors>Reqnroll</Reqnroll_Authors>
+    <Reqnroll_Owners>Reqnroll</Reqnroll_Owners>
+    <Reqnroll_Summary>Reqnroll is an open-source Cucumber-style BDD test automation framework for .NET. It has been created as a reboot of the SpecFlow project.</Reqnroll_Summary>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VersionPrefix>2.1.2</VersionPrefix>
+    <VersionSuffix>local</VersionSuffix>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <CompatibilityVersionUpperRange>3</CompatibilityVersionUpperRange>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <GitBranch Condition=" '$(GitBranch)' == ''">$(GITHUB_REF_NAME)</GitBranch>
+    <GitCommitSha Condition=" '$(GitCommitSha)' == ''">$(GITHUB_SHA)</GitCommitSha>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)/LICENSE" Pack="true" PackagePath=""/>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Authors>$(Reqnroll_Authors)</Authors>
+    <Company>Reqnroll</Company>
+    <Product />
+    <PackageProjectUrl>https://reqnroll.net</PackageProjectUrl>
+    <PackageIcon>images/reqnroll-icon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/reqnroll/Reqnroll</RepositoryUrl>
+    <PackageTags>reqnroll bdd gherkin cucumber</PackageTags>
+    <Description>Reqnroll aims at bridging the communication gap between domain experts and developers by binding business readable behavior specifications to the underlying implementation. Our mission is to provide a pragmatic and frictionless approach to Acceptance Test Driven Development and Behavior Driven Development for .NET projects today."</Description>
+    <Copyright>$(Reqnroll_Copyright)</Copyright>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- for Reqnroll.Tools.MsBuild.Generation -->
+    <Reqnroll_FullFramework_Tools_TFM>net462</Reqnroll_FullFramework_Tools_TFM>
+    <Reqnroll_Core_Tools_TFM>netstandard2.0</Reqnroll_Core_Tools_TFM> 
+
+    <Reqnroll_EnableStrongNameSigning>true</Reqnroll_EnableStrongNameSigning>
+  </PropertyGroup>
+
+
+  <PropertyGroup Condition=" '$(Reqnroll_EnableStrongNameSigning)' == 'true'">
+    <Reqnroll_KeyFile>$(MSBuildThisFileDirectory)\reqnroll.snk</Reqnroll_KeyFile>
+    <Reqnroll_SignAssembly>true</Reqnroll_SignAssembly>
+    <DefineConstants>$(DefineConstants);REQNROLL_ENABLE_STRONG_NAME_SIGNING</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Reqnroll_EnableStrongNameSigning)' == 'false'">
+    <Reqnroll_KeyFile></Reqnroll_KeyFile>
+    <Reqnroll_SignAssembly>false</Reqnroll_SignAssembly>
+  </PropertyGroup>
+</Project>
