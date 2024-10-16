@@ -13,21 +13,21 @@ on:
   workflow_dispatch:
     inputs:
       deploy_packages:
-        description: 'Id the created package should be deployed (additional manual approval required by a release admin)'
+        description: 'deploy_packages: If the created package should be deployed (additional manual approval required by a release admin)'
         type: boolean
         default: false
         required: true
       is_production_release:
-        description: 'Whether the release is a production release and not a pre-releaae (enabling this will update change log, increases version and tags commit)'
+        description: 'is_production_release: Whether the release is a production release and not a pre-releaae (enabling this will update change log, increases version and tags commit)'
         type: boolean
         default: false
         required: true
       custom_version_suffix:
-          description: 'Custom suffix for the NuGet packages (without leading -) for non-production releases. Default: empty for production release, "ci<DATE>" for other runs. The build ID is always appended.'
+          description: 'custom_version_suffix: Custom suffix for the NuGet packages (without leading -) for non-production releases. Default: empty for production release, "ci<DATE>" for other runs. The build ID is always appended.'
           required: false
       custom_configuration:
-        description: 'Custom build configuration. Default: "Debug" for CI builds, "Release" for deployments.'
-        required: true
+        description: 'custom_version_suffix: Custom build configuration. Default: "Debug" for CI builds, "Release" for deployments.'
+        required: false
         default: 'Default'
         type: choice
         options:
