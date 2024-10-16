@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, test-job-1]
     environment: production_environment
-    if: needs.build.outputs.production_release == 'true'
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.production_release == 'true'
 
     steps:
     - uses: actions/checkout@v4
