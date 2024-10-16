@@ -109,7 +109,8 @@ jobs:
     - name: Upload packages
       uses: actions/upload-artifact@v4
       with:
-        name: packages
+        name: packages-v${{ steps.versions.outputs.product_full_version }}
+        if-no-files-found: error
         path: "*.txt"
 
   # test-job-1:
@@ -142,7 +143,7 @@ jobs:
         ssh-key: ${{secrets.RELEASE_GIT_SSH_KEY}}
     - uses: actions/download-artifact@v4
       with:
-        name: packages
+        name: packages-v${{ needs.build.outputs.product_full_version }}
         path: release_packages
     - name: Display structure of downloaded files
       run: ls -R
