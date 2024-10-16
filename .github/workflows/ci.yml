@@ -163,6 +163,7 @@ jobs:
         $newVersion = "${{ needs.build.outputs.product_main_version }}.$newPatch"
         Write-Output "New version: $newVersion"
         Write-Output "$newVersion" >> versions.txt
+        git status
 
     - name: Check for modified files
       id: git-check
