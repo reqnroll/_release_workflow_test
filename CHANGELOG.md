@@ -6,6 +6,14 @@
 
 *Contributors of this release (in alphabetical order):* 
 
+# 2.1.4 - 2024-10-16
+
+## Improvements:
+
+## Bug fixes:
+
+*Contributors of this release (in alphabetical order):* 
+
 # 2.1.3 - 2024-10-16
 
 ## Improvements:
