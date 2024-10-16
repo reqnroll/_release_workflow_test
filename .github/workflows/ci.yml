@@ -136,7 +136,7 @@ jobs:
     # needs: [build, test-job-1]
     needs: [build]
     environment: production_environment
-    # if: github.ref == 'refs/heads/main' && needs.build.outputs.production_release == 'true'
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.production_release == 'true'
     permissions:
       # Give the default GITHUB_TOKEN write permission to commit and push the
       # added or changed files to the repository.
@@ -182,6 +182,7 @@ jobs:
       run: |
         git config --global user.name 'Reqnroll CI' 
         git config --global user.email 'ci@reqnroll.net'
+        git tag v${{ needs.build.outputs.product_full_version }}
         git push origin tag v${{ needs.build.outputs.product_full_version }}
         git add -u
         git commit -m '[automated commit] bump version after release of ${{ needs.build.outputs.product_full_version }}'
