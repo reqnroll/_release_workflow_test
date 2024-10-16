@@ -191,6 +191,7 @@ jobs:
       shell: pwsh
       run: |
         Write-Output "${{ steps.next_version.outputs.product_next_version }}" >> versions.txt
+        [System.IO.File]::WriteAllText("Directory.Build.props", [System.IO.File]::ReadAllText("Directory.Build.props").Replace("${{ needs.build.outputs.product_version_suffix }}", "${{ steps.next_version.outputs.product_next_version }}"))
         git status
 
     - name: Update Changelog
