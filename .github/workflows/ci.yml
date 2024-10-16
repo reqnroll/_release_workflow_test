@@ -26,7 +26,7 @@ on:
           description: 'custom_version_suffix: Custom suffix for the NuGet packages (without leading -) for non-production releases. Default: empty for production release, "ci<DATE>" for other runs. The build ID is always appended.'
           required: false
       custom_configuration:
-        description: 'custom_version_suffix: Custom build configuration. Default: "Debug" for CI builds, "Release" for deployments.'
+        description: 'custom_configuration: Custom build configuration. Default: "Debug" for CI builds, "Release" for deployments.'
         required: false
         default: 'Default'
         type: choice
