@@ -2,6 +2,14 @@
 
 ## Improvements:
 
+## Bug fixes:
+
+*Contributors of this release (in alphabetical order):* 
+
+# 2.1.2-ci20241016-44 - 2024-10-16
+
+## Improvements:
+
 * Support DateTimeOffset in value comparer (#180)
 
 ## Bug fixes:
