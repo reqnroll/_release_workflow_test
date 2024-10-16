@@ -28,22 +28,14 @@ on:
       version_suffix:
         description: 'Suffix for the NuGet packages (without leading -). Build ID will be appended. Use "-" to force empty.'
         required: false
-      specs_filter:
-        description: 'Filter for Specs execution (e.g. Category=basicExecution)'
-        required: false
 
 permissions:
   checks: write
 
-env:
-  SPECS_FILTER: "" # use for testing CI: "&Category=basicExecution"
-  REQNROLL_TEST_PIPELINEMODE: true
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     outputs:
       product_version_prefix: ${{ steps.versions.outputs.product_version_prefix }}
       product_version_suffix: ${{ steps.versions.outputs.product_version_suffix }}
@@ -161,24 +153,23 @@ jobs:
       run: |
         Write-Output "Deploying (prod: ${{ needs.build.outputs.production_release }}) ${{ needs.build.outputs.product_full_version }} (${{ needs.build.outputs.product_main_version }}) / key: $env:ENV_SECRET1"
 
-    - name: Simulate Bump Version
+    - name: Calculate Next Version
+      id: next_version
       shell: pwsh
       run: |
         $patchVersion = "${{ needs.build.outputs.product_patch_version }}"
         $newPatch = [int]$patchVersion + 1
-        $newVersion = "${{ needs.build.outputs.product_main_version }}.$newPatch"
-        Write-Output "New version: $newVersion"
-        Write-Output "$newVersion" >> versions.txt
+        $nextVersion = "${{ needs.build.outputs.product_main_version }}.$nextPatch"
+        Write-Output "product_next_version=$nextVersion" >> $env:GITHUB_OUTPUT
+        Write-Output "Product Next Version: $nextVersion"
+
+    - name: Simulate Bump Version
+      shell: pwsh
+      run: |
+        Write-Output "${{ steps.next_version.outputs.product_next_version }}" >> versions.txt
         git status
 
-    - name: Check for modified files
-      id: git-check
-      run: |
-        echo modified=$(if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "true"; else echo "false"; fi)
-        echo modified=$(if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "true"; else echo "false"; fi) >> $env:GITHUB_OUTPUT
-
     - name: Update changes in GitHub repository
-      # if: steps.git-check.outputs.modified == 'true'
       run: |
         git config --global user.name 'Reqnroll CI' 
         git config --global user.email 'ci@reqnroll.net'
