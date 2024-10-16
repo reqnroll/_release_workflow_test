@@ -181,7 +181,7 @@ jobs:
       shell: pwsh
       run: |
         $patchVersion = "${{ needs.build.outputs.product_patch_version }}"
-        $newPatch = [int]$patchVersion + 1
+        $nextPatch = [int]$patchVersion + 1
         $nextVersion = "${{ needs.build.outputs.product_main_version }}.$nextPatch"
         Write-Output "product_next_version=$nextVersion" >> $env:GITHUB_OUTPUT
         Write-Output "Product Next Version: $nextVersion"
