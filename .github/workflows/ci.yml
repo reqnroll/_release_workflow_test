@@ -65,7 +65,7 @@ jobs:
         if ($productionReleaseSetting -eq 'true') {
             $productionRelease = $true
         }
-        $productionReleaseValue = $productionRelease.ToString().ToLoverInvariant()
+        $productionReleaseValue = $productionRelease.ToString().ToLowerInvariant()
         Write-Output "production_release=$productionReleaseValue" >> $env:GITHUB_OUTPUT        
         Write-Output "Production release: $productionRelease ($productionReleaseValue)"
 
