@@ -12,22 +12,28 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
     inputs:
-      configuration:
-        description: 'Build Configuration'
-        required: true
-        default: 'Debug'
-        type: choice
-        options:
-        - Debug
-        - Release
-      production_release:
-        description: 'If the build produces a production package'
+      deploy_packages:
+        description: 'Id the created package should be deployed (additional manual approval required by a release admin)'
         type: boolean
         default: false
         required: true
-      version_suffix:
-        description: 'Suffix for the NuGet packages (without leading -). Build ID will be appended. Use "-" to force empty.'
-        required: false
+      is_production_release:
+        description: 'Whether the release is a production release and not a pre-releaae (enabling this will update change log, increases version and tags commit)'
+        type: boolean
+        default: false
+        required: true
+      custom_version_suffix:
+          description: 'Custom suffix for the NuGet packages (without leading -) for non-production releases. Default: empty for production release, "ci<DATE>" for other runs. The build ID is always appended.'
+          required: false
+      custom_configuration:
+        description: 'Custom build configuration. Default: "Debug" for CI builds, "Release" for deployments.'
+        required: true
+        default: 'Default'
+        type: choice
+        options:
+        - Default
+        - Debug
+        - Release
 
 permissions:
   checks: write
@@ -43,7 +49,8 @@ jobs:
       product_patch_version: ${{ steps.versions.outputs.product_patch_version }}
       product_full_version: ${{ steps.versions.outputs.product_full_version }}
       product_configuration: ${{ steps.versions.outputs.product_configuration }}
-      production_release: ${{ steps.versions.outputs.production_release }}
+      deploy_packages: ${{ steps.versions.outputs.deploy_packages }}
+      is_production_release: ${{ steps.versions.outputs.is_production_release }}
 
     steps:
     - uses: actions/checkout@v4
@@ -51,33 +58,47 @@ jobs:
       name: Calculate versions
       shell: pwsh
       run: |
-        $productionReleaseSetting = "${{ inputs.production_release }}"
-        $productionRelease = $false
-        if ($productionReleaseSetting -eq 'true') {
-            $productionRelease = $true
+        $deployPackages = $false
+        if ("${{ inputs.deploy_packages }}" -eq 'true') {
+          $deployPackages = $true
         }
-        $productionReleaseValue = $productionRelease.ToString().ToLowerInvariant()
-        Write-Output "production_release=$productionReleaseValue" >> $env:GITHUB_OUTPUT        
-        Write-Output "Production release: $productionRelease ($productionReleaseValue)"
+        Write-Output "deploy_packages=$($deployPackages.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT        
+        Write-Output "Deploy packages: $deployPackages"
 
-        $versionSuffix = "${{ inputs.version_suffix }}"
-        if ($versionSuffix -eq "") {
+        $isProductionRelease = $false
+        if ("${{ inputs.is_production_release }}" -eq 'true') {
+          $isProductionRelease = $true
+        }
+        Write-Output "is_production_release=$($isProductionRelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT       
+        Write-Output "Is production release: $isProductionRelease" 
+
+        $versionSuffix = "${{ inputs.custom_version_suffix }}"
+        if ($isProductionRelease){
+          if ($versionSuffix -ne "") {
+            throw "The 'custom_version_suffix' setting cannot be used for production releases."
+          }
+        }
+        else {
+          if ($versionSuffix -eq "") {
             $date = [datetime]::Today
             $dateString = $date.ToString('yyyyMMdd')
             $versionSuffix = "ci$dateString-${env:GITHUB_RUN_NUMBER}"
-        }
-        elseif ($versionSuffix -eq "-") {
-            $versionSuffix = ""
-        }
-        else {
+          }
+          else {
             $versionSuffix = "$versionSuffix-${env:GITHUB_RUN_NUMBER}"
+          }
         }
         Write-Output "product_version_suffix=$versionSuffix" >> $env:GITHUB_OUTPUT
         Write-Output "Product Version Suffix: $versionSuffix"
         
-        $productConfig = "${{ inputs.configuration }}"
-        if ($productConfig -eq "") {
+        $productConfig = "${{ inputs.custom_configuration }}"
+        if ($productConfig -eq "Default") {
+          if ($deployPackages){
+            $productConfig = "Release"
+          }
+          else {
             $productConfig = "Debug"
+          }
         }
         Write-Output "product_configuration=$productConfig" >> $env:GITHUB_OUTPUT
         Write-Output "Product Configuration: $productConfig"
@@ -129,7 +150,7 @@ jobs:
     # needs: [build, test-job-1]
     needs: [build]
     environment: production_environment
-    if: github.ref == 'refs/heads/main' && needs.build.outputs.production_release == 'true'
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.deploy_packages == 'true'
     permissions:
       # Give the default GITHUB_TOKEN write permission to commit and push the
       # added or changed files to the repository.
@@ -152,9 +173,10 @@ jobs:
         ENV_SECRET1: ${{ secrets.ENV_SECRET1 }}      
       shell: pwsh
       run: |
-        Write-Output "Deploying (prod: ${{ needs.build.outputs.production_release }}) ${{ needs.build.outputs.product_full_version }} (${{ needs.build.outputs.product_main_version }}) / key: $env:ENV_SECRET1"
+        Write-Output "Deploying (prod: ${{ needs.build.outputs.deploy_packages }}) ${{ needs.build.outputs.product_full_version }} (${{ needs.build.outputs.product_main_version }}) / key: $env:ENV_SECRET1"
 
     - name: Calculate Next Version
+      if: needs.build.outputs.is_production_release == 'true'
       id: next_version
       shell: pwsh
       run: |
@@ -165,12 +187,14 @@ jobs:
         Write-Output "Product Next Version: $nextVersion"
 
     - name: Simulate Bump Version
+      if: needs.build.outputs.is_production_release == 'true'
       shell: pwsh
       run: |
         Write-Output "${{ steps.next_version.outputs.product_next_version }}" >> versions.txt
         git status
 
     - name: Update Changelog
+      if: needs.build.outputs.is_production_release == 'true'
       shell: pwsh
       run: |
         $newHeading = "# [vNext]$([Environment]::NewLine)$([Environment]::NewLine)## Improvements:$([Environment]::NewLine)$([Environment]::NewLine)## Bug fixes:$([Environment]::NewLine)$([Environment]::NewLine)*Contributors of this release (in alphabetical order):* $([Environment]::NewLine)$([Environment]::NewLine)"
@@ -180,6 +204,7 @@ jobs:
         [System.IO.File]::WriteAllText("CHANGELOG.md", $content)
 
     - name: Update changes in GitHub repository
+      if: needs.build.outputs.is_production_release == 'true'
       run: |
         git config --global user.name 'Reqnroll CI' 
         git config --global user.email 'ci@reqnroll.net'
