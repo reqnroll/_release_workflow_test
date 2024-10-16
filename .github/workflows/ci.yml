@@ -50,6 +50,7 @@ jobs:
       product_main_version: ${{ steps.versions.outputs.product_main_version }}
       product_full_version: ${{ steps.versions.outputs.product_full_version }}
       product_configuration: ${{ steps.versions.outputs.product_configuration }}
+      production_release: ${{ steps.versions.outputs.production_release }}
 
     steps:
     - uses: actions/checkout@v4
@@ -64,7 +65,9 @@ jobs:
         if ($productionReleaseSetting -eq 'true') {
             $productionRelease = $true
         }
-        Write-Output "Production release: $productionRelease"
+        $productionReleaseValue = $productionRelease.ToString().ToLoverInvariant()
+        Write-Output "production_release=$productionReleaseValue" >> $env:GITHUB_OUTPUT        
+        Write-Output "Production release: $productionRelease ($productionReleaseValue)"
 
         $versionSuffix = "${{ inputs.version_suffix }}"
         if ($versionSuffix -eq "") {
@@ -130,9 +133,8 @@ jobs:
   release-job:
     runs-on: ubuntu-latest
     needs: [build, test-job-1]
-    environment: 
-      name: production_environment
-      url: v${{ needs.build.outputs.product_full_version }}
+    environment: production_environment
+    if: needs.build.outputs.production_release == 'true'
 
     steps:
     - uses: actions/checkout@v4
@@ -141,9 +143,10 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: packages
+        path: release_packages
     - name: Display structure of downloaded files
       run: ls -R
     - name: Simulate Deployment
       shell: pwsh
       run: |
-        Write-Output "Deploying ${{ needs.build.outputs.product_full_version }} (${{ needs.build.outputs.product_main_version }})"
+        Write-Output "Deploying (prod: ${{ needs.build.outputs.production_release }}) ${{ needs.build.outputs.product_full_version }} (${{ needs.build.outputs.product_main_version }})"
