@@ -48,6 +48,7 @@ jobs:
       product_version_prefix: ${{ steps.versions.outputs.product_version_prefix }}
       product_version_suffix: ${{ steps.versions.outputs.product_version_suffix }}
       product_main_version: ${{ steps.versions.outputs.product_main_version }}
+      product_full_version: ${{ steps.versions.outputs.product_full_version }}
       product_configuration: ${{ steps.versions.outputs.product_configuration }}
 
     steps:
@@ -96,11 +97,17 @@ jobs:
         Write-Output "product_main_version=$mainVersion" >> $env:GITHUB_OUTPUT
         Write-Output "Product Main Version: $mainVersion"
 
+        $fullVersion = $versionPrefix
+        if ($versionSuffix -ne "") {
+            $fullVersion = "$fullVersion-$versionSuffix"
+        }
+        Write-Output "product_full_version=$fullVersion" >> $env:GITHUB_OUTPUT
+        Write-Output "Product Full Version: $fullVersion"
 
     - name: Simulate Build
       shell: pwsh
       run: |
-        Write-Output "hello ${{ steps.versions.outputs.product_version_prefix }}${{ steps.versions.outputs.product_version_suffix }} (${{ steps.versions.outputs.product_main_version }})" > package.${{ steps.versions.outputs.product_version_prefix }}.txt
+        Write-Output "hello ${{ steps.versions.outputs.product_full_version }} (${{ steps.versions.outputs.product_main_version }})" > package.${{ steps.versions.outputs.product_version_prefix }}.txt
     - name: Upload packages
       uses: actions/upload-artifact@v4
       with:
@@ -118,4 +125,4 @@ jobs:
     - name: Simulate Test
       shell: pwsh
       run: |
-        Write-Output "Testing ${{ needs.build.outputs.product_version_prefix }}${{ needs.build.outputs.product_version_suffix }} (${{ needs.build.outputs.product_main_version }})"
+        Write-Output "Testing ${{ needs.build.outputs.product_full_version }} (${{ needs.build.outputs.product_main_version }})"
